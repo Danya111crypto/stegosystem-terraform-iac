@@ -1,0 +1,12 @@
+services:
+  localstack:
+    image: localstack/localstack:3.8
+    container_name: terraform-localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=ec2,vpc,elbv2,autoscaling,rds,cloudwatch,sns,secretsmanager,s3,iam,sts
+      - DEFAULT_REGION=us-east-1
+      - EAGER_SERVICE_LOADING=1
+    volumes:
+      - "./.localstack:/var/lib/localstack"

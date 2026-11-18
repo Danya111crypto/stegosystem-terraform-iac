@@ -1,0 +1,45 @@
+name: Terraform IaC CI/CD (LocalStack)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  terraform-iac-pipeline:
+    name: Validate, Plan & Drift Check
+    runs-on: ubuntu-latest
+
+    services:
+      localstack:
+        image: localstack/localstack:3.8
+        ports:
+          - 4566:4566
+        env:
+          SERVICES: ec2,autoscaling,cloudwatch,sns,secretsmanager,s3,iam,sts
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.9.8
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init & Validate
+        run: |
+          terraform init -backend=false
+          terraform validate
+
+      - name: Terraform Plan (Blue & Green Workspaces)
+        run: |
+          terraform init
+          terraform workspace new blue || terraform workspace select blue
+          terraform plan -var="active_slot=green"
+          terraform workspace new green || terraform workspace select green
+          terraform plan -var="active_slot=green"
